@@ -1,4 +1,4 @@
-# 🚀 QuickShell OpenWRT Installer
+# <div align="center">🚀 QuickShell OpenWRT Installer</div>
 
 **QuickShell** — это набор скриптов для OpenWRT, предназначенный для:
 
