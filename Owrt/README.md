@@ -15,9 +15,8 @@
 
 Для быстрой установки всех компонентов используйте команду:
 
-sh <(wget -qO- https://raw.githubusercontent.com/qwertyonek/quickshellrepo/main/Owrt/openwrt_allinone_setup.sh)
+"sh <(wget -qO- https://raw.githubusercontent.com/qwertyonek/quickshellrepo/main/Owrt/openwrt_allinone_setup.sh)"
 
-text
 
 При запуске выберите режим:
 - **Автоматический** — установит всё сразу  
