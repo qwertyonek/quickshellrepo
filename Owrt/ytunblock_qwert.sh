@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # Проверка наличия необходимых утилит
-for cmd in wget opkg uname; do
+for cmd in wget opkg uname tar chmod; do
     if ! command -v $cmd &>/dev/null; then
-        echo "Ошибка: Утилита $cmd не установлена."
+        echo "Ошибка: утилита $cmd не установлена."
         exit 1
     fi
 done
@@ -17,7 +17,7 @@ case "$ARCH" in
     aarch64)
         PKG="youtubeUnblock-1.0.0-10-f37c3dd-aarch64_generic-openwrt-23.05.ipk"
         ;;
-    armv7)
+    armv7|armv7l)
         PKG="youtubeUnblock-1.0.0-10-f37c3dd-armv7-static.tar.gz"
         ;;
     armv7sf)
@@ -39,7 +39,7 @@ case "$ARCH" in
         PKG="youtubeUnblock-1.0.0-10-f37c3dd-mipsel-static.tar.gz"
         ;;
     *)
-        echo "Ошибка: архитектура '$ARCH' не поддерживается этим скриптом"
+        echo "Ошибка: архитектура '$ARCH' не поддерживается этим скриптом."
         exit 1
         ;;
 esac
@@ -74,7 +74,7 @@ else
     exit 1
 fi
 
-# Шаг 4. Скачивание и установка youtubeUnblock
+# Шаг 4. Скачивание youtubeUnblock
 echo "Скачиваем пакет youtubeUnblock..."
 wget -O "/tmp/$PKG" "https://github.com/Waujito/youtubeUnblock/releases/download/v1.0.0/$PKG"
 if [ $? -eq 0 ]; then
@@ -86,22 +86,36 @@ fi
 
 # Проверка существования файла
 if [ ! -f "/tmp/$PKG" ]; then
-    echo "Ошибка: файл $PKG не был найден в /tmp"
+    echo "Ошибка: файл $PKG не найден в /tmp"
     exit 1
 fi
 
-echo "Устанавливаем youtubeUnblock..."
-opkg install "/tmp/$PKG"
-if [ $? -eq 0 ]; then
-    echo "youtubeUnblock установлен успешно"
+# Шаг 5. Установка youtubeUnblock
+if echo "$PKG" | grep -q ".tar.gz$"; then
+    echo "Обнаружен tar.gz — распаковываем youtubeUnblock..."
+    tar -xzf "/tmp/$PKG" -C /usr/bin/
+    if [ -f /usr/bin/youtubeUnblock ]; then
+        chmod +x /usr/bin/youtubeUnblock
+        echo "youtubeUnblock установлен вручную (tar.gz)"
+    else
+        echo "Ошибка: бинарник youtubeUnblock не найден после распаковки"
+        exit 1
+    fi
 else
-    echo "Ошибка установки youtubeUnblock"
-    exit 1
+    echo "Устанавливаем youtubeUnblock через opkg..."
+    opkg install "/tmp/$PKG"
+    if [ $? -eq 0 ]; then
+        echo "youtubeUnblock установлен успешно"
+    else
+        echo "Ошибка установки youtubeUnblock"
+        exit 1
+    fi
 fi
 
-# Шаг 5. Установка luci-app-youtubeUnblock
+# Шаг 6. Установка luci-app-youtubeUnblock
 echo "Скачиваем пакет luci-app-youtubeUnblock..."
-wget -O "/tmp/luci-app-youtubeUnblock-1.0.0-10-f37c3dd.ipk" "https://github.com/Waujito/youtubeUnblock/releases/download/v1.0.0/luci-app-youtubeUnblock-1.0.0-10-f37c3dd.ipk"
+wget -O "/tmp/luci-app-youtubeUnblock-1.0.0-10-f37c3dd.ipk" \
+"https://github.com/Waujito/youtubeUnblock/releases/download/v1.0.0/luci-app-youtubeUnblock-1.0.0-10-f37c3dd.ipk"
 if [ $? -eq 0 ]; then
     echo "Пакет luci-app-youtubeUnblock скачан"
 else
@@ -118,14 +132,17 @@ else
     exit 1
 fi
 
-# Шаг 6. Включение автозапуска youtubeUnblock
-echo "Включаем автозапуск youtubeUnblock..."
-/etc/init.d/youtubeUnblock enable
-if [ $? -eq 0 ]; then
-    echo "youtubeUnblock настроен на автозапуск"
+# Шаг 7. Настройка автозапуска
+if [ -x /etc/init.d/youtubeUnblock ]; then
+    echo "Включаем автозапуск youtubeUnblock..."
+    /etc/init.d/youtubeUnblock enable
+    if [ $? -eq 0 ]; then
+        echo "youtubeUnblock настроен на автозапуск"
+    else
+        echo "Ошибка включения автозапуска youtubeUnblock"
+    fi
 else
-    echo "Ошибка включения автозапуска youtubeUnblock"
-    exit 1
+    echo "Предупреждение: /etc/init.d/youtubeUnblock не найден, пропускаем enable"
 fi
 
 echo "=== Установка завершена успешно ==="
